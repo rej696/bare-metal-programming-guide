@@ -71,7 +71,7 @@ static inline void gpio_input(uint16_t pin) {
             GPIO_PULL_NONE, 0);
 }
 static inline void gpio_output(uint16_t pin) {
-  gpio_init(pin, GPIO_MODE_OUTPUT, GPIO_OTYPE_PUSH_PULL, GPIO_SPEED_HIGH,
+  gpio_init(pin, GPIO_MODE_OUTPUT, GPIO_OTYPE_PUSH_PULL, GPIO_SPEED_LOW,
             GPIO_PULL_NONE, 0);
 }
 
@@ -87,6 +87,7 @@ static inline void irq_exti_attach(uint16_t pin) {
   NVIC_EnableIRQ(irqvec);
 }
 
+#if 0
 #ifndef UART_DEBUG
 #define UART_DEBUG USART3
 #endif
@@ -148,6 +149,7 @@ static inline uint32_t rng_read(void) {
     2, UUID[0] ^ UUID[1], UUID[2] ^ UUID[3], UUID[4] ^ UUID[5],    \
         UUID[6] ^ UUID[7] ^ UUID[8], UUID[9] ^ UUID[10] ^ UUID[11] \
   }
+#endif
 
 static inline bool timer_expired(volatile uint64_t *t, uint64_t prd,
                                  uint64_t now) {

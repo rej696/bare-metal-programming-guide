@@ -54,11 +54,13 @@ int _getpid(void) {
   return -1;
 }
 
+#if 0
 int _write(int fd, char *ptr, int len) {
   (void) fd, (void) ptr, (void) len;
   if (fd == 1) uart_write_buf(UART_DEBUG, ptr, (size_t) len);
   return -1;
 }
+#endif
 
 int _read(int fd, char *ptr, int len) {
   (void) fd, (void) ptr, (void) len;
