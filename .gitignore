@@ -1,0 +1,8 @@
+*.elf
+*.map
+*.o
+*.bin
+**/cmsis_core
+**/cmsis_f4
+**/.cache
+compile_commands.json
