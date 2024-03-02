@@ -92,24 +92,69 @@ typedef struct rcc {
 
 #define RCC ((rcc_t *) 0x40023800)
 
-static inline void delay(volatile uint32_t count)
-{
-    for (;count > 0; --count) {
-        asm("nop");
-    }
+typedef struct systick {
+    volatile uint32_t CTRL;
+    volatile uint32_t LOAD;
+    volatile uint32_t VAL;
+    volatile uint32_t CALIB;
+} systick_t;
+
+#define SYSTICK ((systick_t *) 0xe000e010)
+
+static inline void systick_init(uint32_t const ticks) {
+    if ((ticks - 1) > 0xffffff) return; // Systick timer is 24 bit
+    SYSTICK->LOAD = ticks - 1;
+    SYSTICK->VAL = 0;
+    SYSTICK->CTRL = BIT(0) | BIT(1) | BIT(2); /* Enable Systick */
+    RCC->APB2ENR |= BIT(14); /* SYSCFG enable */
 }
+
+#define CLOCK_FREQ (16000000) /* HSI (internal) clock for black pill is 16MHz */
+
+static volatile uint32_t s_ticks; /* tick counter */
+void SysTick_Handler(void) {
+    s_ticks++;
+}
+
+static bool timer_expired(uint32_t *const timer, uint32_t const period, uint32_t const now)
+{
+    /* reset timer if wrapped */
+    if ((now + period) < (*timer)) {
+        *timer = 0;
+    }
+    /* set expiration if first poll */
+    if (*timer == 0) {
+        *timer = now + period;
+    }
+    /* Return if not expired yet */
+    if (*timer > now) {
+        return false;
+    }
+    /* Set the next expiration time */
+    if ((now - *timer) > period) {
+        *timer = now + period;
+    } else {
+        *timer = *timer + period;
+    }
+    return true;
+}
+
 
 int main(void)
 {
     uint16_t led = PIN('C', 13);
     RCC->AHB1ENR |= BIT(PINBANK(led));
     gpio_set_mode(led, GPIO_MODE_OUTPUT);
+    systick_init(CLOCK_FREQ / 1000); /* tick every ms */
+    uint32_t timer = 0;
+    uint32_t period = 500; /* Toggle LEDs every 500 ms */
 
     while (1) {
-        gpio_write(led, true);
-        delay(1000000);
-        gpio_write(led, false);
-        delay(1000000);
+        if (timer_expired(&timer, period, s_ticks)) {
+            static bool on = true;
+            gpio_write(led, on);
+            on = !on;
+        }
     }
 
     return 0;
@@ -142,6 +187,7 @@ extern void _estack(void);
 
 /* 16 standard and 91 STM32 specific handlers in the vector table */
 __attribute__((section(".vectors"))) void (*const tab[16 + 91])(void) = {
-    _estack,
-    _reset
+    [0] = _estack,
+    [1] = _reset,
+    [15] = SysTick_Handler
 };
