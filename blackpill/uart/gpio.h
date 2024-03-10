@@ -15,8 +15,7 @@ typedef struct gpio {
     volatile uint32_t ODR;
     volatile uint32_t BSRR;
     volatile uint32_t LCKR;
-    volatile uint32_t AFRH;
-    volatile uint32_t AFRL;
+    volatile uint32_t AFR[2];
 } gpio_t;
 
 #define GPIO(bank) ((gpio_t *) (0x40020000 + 0x400 * (bank)))
@@ -39,15 +38,10 @@ static inline void gpio_set_mode(uint16_t const pin, uint8_t const mode)
 
 static inline bool gpio_set_af(uint16_t const pin, uint8_t const af_num)
 {
-    if (af_num > 0xF) { return false; }
     gpio_t *gpio = GPIO(PINBANK(pin));
     int n = PINNO(pin);
-    if (n > 0xF) { return false; }
-    /* Get the afr register and offset for the given pin */
-    volatile uint32_t *afr = (n < 8) ? &gpio->AFRL : &gpio->AFRH;
-    uint32_t offset = (n & 7) * 4;
-    *afr &= ~(0xFUL << offset);
-    *afr |= ((uint32_t) af_num) << offset;
+    gpio->AFR[n >> 3] &= ~(15UL << ((n & 7) * 4));
+    gpio->AFR[n >> 3] |= ((uint32_t) af_num) << ((n & 7) * 4);
     return true;
 }
 

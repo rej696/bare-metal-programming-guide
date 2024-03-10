@@ -156,6 +156,17 @@ int main(void)
             on = !on;
             uart_write_str(UART1, "hi\r\n");
         }
+
+        /* Modify speed of the timer based on uart1 input */
+        if (uart_read_ready(UART1)) {
+            uint8_t byte = uart_read_byte(UART1);
+            uart_write_byte(UART1, byte);
+            if (byte == '+') {
+                period >>= 1;
+            } else if (byte == '-') {
+                period <<= 1;
+            }
+        }
     }
 
     return 0;
